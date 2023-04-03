@@ -3,6 +3,7 @@ export default {
     async getAllUsers( {commit},data ){
         const res = await ApiCaller('users','GET',data)
         commit('setAllUsers',res.data.data)
+        return res.data.data
     },
     async getCourseSelect2({commit}){
         const res = await ApiCaller('coursesSelect2','GET',null)
@@ -58,8 +59,8 @@ export default {
     },
     async getAllCourses({commit},data){
         const res = await ApiCaller('courses','GET',data)
-        console.log(res.data.data)
         commit('setAllCourses',res.data.data)
+        return res.data.data
     },
     async deleteCourse({commit},data){
         return await ApiCaller(`courses/${data}`,'DELETE',null).then((res)=>{

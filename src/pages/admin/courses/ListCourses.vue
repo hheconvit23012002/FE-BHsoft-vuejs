@@ -12,7 +12,8 @@
                         </select>
                         <button class="btn btn-success" type="submit" @click.prevent="searchSubmit">Search</button>
                     </form>
-                    <router-link class="btn btn-primary" :to="{ name: 'admin-course-create' }">Create</router-link>
+                    <!-- <router-link class="btn btn-primary" :to="{ name: 'admin-course-create' }">Create</router-link> -->
+                    <button class="btn btn-primary" @click="showCreate = true">Create</button>
                     <form action="#" class="d-inline">
                         <label class="btn btn-info ml-2 mb-0" for="csv">Import CSV</label>
                         <input type="file" name="csv" id="csv" class="d-none" @change="importFile"
@@ -50,10 +51,11 @@
                                     {{ value.end_date }}
                                 </td>
                                 <td>
-                                    <router-link class="btn btn-success"
+                                    <button class="btn btn-success" @click="edit(value.id)">Edit</button>
+                                    <!-- <router-link class="btn btn-success"
                                         :to="{ name: 'admin-course-edit', params: { id: value.id } }">
                                         Edit
-                                    </router-link>
+                                    </router-link> -->
                                 </td>
                                 <td>
                                     <div class="btn btn-danger" @click="onDelete(value.id)">Delete</div>
@@ -61,52 +63,69 @@
                             </tr>
                         </tbody>
                     </table>
-                    <nav class="mt-4">
-                        <ul class="pagination pagination-rounded mb-0" id="paginate">
-                            <li @click.prevent="changePage(value.url)" v-for="(value, index) in courses.pagination"
-                                :key="index" class="page-item" :class="{ active: value.active }">
-                                <a class="page-link" :href="value.url">
-                                    {{ value.label }}
-                                </a>
-                            </li>
-                        </ul>
-                    </nav>
+                    <a-pagination class="mt-4" :pageSize="15" @change="getCourses" v-model:current="currentPage"
+                        v-model:pageSizeOptions="pageSize" :total="totalCourses">
+                        <template #itemRender="{ type, originalElement }">
+                            <a class="page" v-if="type === 'prev'">Previous</a>
+                            <a class="page" v-else-if="type === 'next'">Next</a>
+                            <component :is="originalElement" v-else></component>
+                        </template>
+                    </a-pagination>
                 </div>
             </div>
         </div>
     </div>
+    <CreateCourse v-if="showCreate" @close="closeCreatePopup"></CreateCourse>
+    <EditCourse v-if="showEdit" :id="id" @close="closeEditPopup"></EditCourse>
 </template>
 <script >
 import { mapActions, mapGetters } from 'vuex';
 import { notification } from 'ant-design-vue';
-
+import CreateCourse from './CreateCourse.vue';
+import EditCourse from './EditCourse.vue';
+import axios from 'axios'
 export default {
     data() {
         return {
             q: this.$route.query.q || '',
             field: this.$route.query.field || 'name',
-            page: this.$route.query.page || 1,
             file: null,
+            showCreate: false,
+            showEdit: false,
+            id: 0,
+            currentPage: 1,
+            totalCourses: 0,
+            pageSize: ['15']
         }
+    },
+    components: {
+        CreateCourse,
+        EditCourse
     },
     computed: {
         ...mapGetters(['courses'])
     },
     methods: {
-        ...mapActions(['getAllCourses', 'deleteCourse', 'importCsv','exportCsv']),
-        changePage(url) {
-            if (url !== null) {
-                this.page = url.split('page=')[1]
-                this.$router.push({ name: 'admin-courses', query: { page: this.page, q: this.q, field: this.field } })
-            }
+        ...mapActions(['getAllCourses', 'deleteCourse', 'importCsv', 'exportCsv']),
+        edit(e) {
+            this.id = e
+            this.showEdit = true
+        },
+        closeCreatePopup(){
+            this.showCreate = false;
+            this.currentPage = 1;
+        },
+        closeEditPopup(){
+            this.showEdit = false;
+            this.currentPage = 1;
+            console.log("ok")
         },
         searchSubmit() {
-            this.getAllCourses({
-                q: this.q,
-                field: this.field,
-            })
+            this.currentPage = 1
+            this.getCourses()
         },
         importFile(event) {
+            this.getCourses()
             this.importCsv(event.target.files[0]).then(() => {
                 notification['success']({
                     message: 'Notification Access',
@@ -119,11 +138,50 @@ export default {
                 });
             })
         },
-        getCsv(){
-            window.location.href = "http://laravel_bhsoft_v1.test/api/export-csv"
+        getCsv() {
+            axios({
+                url: 'http://laravel_bhsoft_v1.test/api/export-csv',
+                method: 'GET',
+                responseType: 'blob',
+                headers: {
+                    'Authorization': "Bearer " + localStorage.getItem("token")
+                }
+            })
+                .then((response) => {
+                    const url = window.URL.createObjectURL(new Blob([response.data]));
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.setAttribute('download', 'file.xlsx');
+                    document.body.appendChild(link);
+                    link.click();
+                    notification['success']({
+                        message: 'Notification Access',
+                        description: 'Export thanh cong',
+                    });
+                })
+                .catch((error) => {
+                    notification['error']({
+                        message: 'Notification Error',
+                        description: 'Export that bai',
+                    });
+                    console.log(error);
+                });
+            // window.location.href = "http://laravel_bhsoft_v1.test/api/export-csv"
+        },
+        getCourses() {
+            this.getAllCourses({
+                q: this.q,
+                field: this.field,
+                page: this.currentPage,
+            }).then((res) => {
+                this.currentPage = res.current_page,
+                    this.totalCourses = res.total
+                console.log(res)
+            })
         },
         onDelete(e) {
             this.deleteCourse(e).then(() => {
+                this.getCourses()
                 notification['success']({
                     message: 'Notification Access',
                     description: 'delete thanh cong',
@@ -137,21 +195,24 @@ export default {
         }
     },
     mounted() {
-        this.getAllCourses({
-            q: this.q,
-            field: this.field,
-            page: this.page,
-        })
+        this.getCourses()
     },
     watch: {
         page: function () {
-            this.getAllCourses({
-                q: this.q,
-                field: this.field,
-                page: this.page,
-            })
+            this.getCourses()
         }
     }
 }
 </script>
-<style scoped></style>
+<style scoped>
+.page {
+    display: block;
+    background-color: white;
+    padding: 0 10px;
+}
+
+.page:hover {
+    background-color: rgb(54, 114, 232);
+    color: white;
+}
+</style>

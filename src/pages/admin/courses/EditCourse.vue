@@ -1,21 +1,26 @@
 <template>
+    <div class="modal" @click="$emit('close')"></div>
     <div class="row">
         <div class="col-12">
             <div class="card">
                 <div class="card-body">
-                    <form class="form-horizontal" method="post" id="form-course" enctype="multipart/form-data" @submit.prevent="onSubmitForm">
+                    <span class="close" @click="$emit('close')">X</span>
+                    <form class="form-horizontal" method="post" id="form-course" enctype="multipart/form-data"
+                        @submit.prevent="onSubmitForm">
                         <div class="form-group">
                             <label for="name">Name</label>
                             <input class="form-control" type="text" id="name" name="name" v-model="data.name">
                         </div>
                         <div class="form-group">
                             <label for="description">Description</label>
-                            <textarea class="form-control" id="description" name="description" rows="12" v-model="data.description">
+                            <textarea class="form-control textarea" id="description" name="description" rows="12"
+                                v-model="data.description">
                                     </textarea>
                         </div>
                         <div class="form-group">
                             <label for="start_date">Start date</label>
-                            <input class="form-control" type="date" id="start_date" name="start_date" v-model="data.start_date">
+                            <input class="form-control" type="date" id="start_date" name="start_date"
+                                v-model="data.start_date">
                         </div>
                         <div class="form-group">
                             <label for="end_date">End date</label>
@@ -31,8 +36,12 @@
 
 <script>
 import { mapActions } from 'vuex';
-import { notification } from 'ant-design-vue';
+import Swal from 'sweetalert2';
+import Validate from '@/validate/index'
 export default {
+    props: [
+        'id'
+    ],
     data() {
         return {
             data: {
@@ -43,29 +52,57 @@ export default {
             }
         }
     },
+    emits: ['close'],
     methods: {
-        ...mapActions(['getCourse', 'editCourse']),
+        ...mapActions(['getCourse', 'editCourse','getAllCourses']),
         onSubmitForm() {
-            this.editCourse({ data: this.data, id: this.$route.params.id }).then(() => {
-                notification['success']({
-                    message: 'Notification Access',
-                    description: 'update thanh cong',
-                });
-                this.$router.push({ name: 'admin-courses' })
-            }).catch(() => {
-                notification['error']({
-                    message: 'Notification Access',
-                    description: 'update that bai',
-                });
-            })
+            let flag = true;
+            let validate = [];
+            validate.push({ rg: Validate.isEmpty(this.data.name), title: "name" });
+            validate.push({ rg: Validate.isEmpty(this.data.description), title: "description" });
+            validate.push({ rg: Validate.lengthMax(this.data.description), title: "description" });
+            validate.push({ rg: Validate.isEmpty(this.data.start_date), title: "start_date" });
+            validate.push({ rg: Validate.isEmpty(this.data.end_date), title: "end_date" });
+            validate.push({ rg: Validate.isDate(this.data.start_date), title: "start_date" });
+            validate.push({ rg: Validate.isDate(this.data.end_date), title: "end_date" });
+            validate.push({ rg: Validate.checkDateCourse(this.data.start_date, this.data.end_date), title: "Date" });
+            for (let i = 0; i < validate.length; i++) {
+                if (validate[i].rg.status === false) {
+                    flag = false;
+                    Swal.fire({
+                        icon: 'error',
+                        title: validate[i].title,
+                        text: validate[i].rg.text,
+                    })
+                    break;
+                }
+            }
+            if (flag) {
+                this.editCourse({ data: this.data, id: this.id }).then(() => {
+                    Swal.fire({
+                        icon: 'success',
+                        title : 'Success',
+                        text: 'Thanh Cong',
+                    })
+                    this.getAllCourses()
+                    this.$emit('close')
+                }).catch((err) => {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: err.response,
+                    })
+                })
+            }
+
         },
     },
     mounted() {
-        if (typeof this.$route.params.id !== "undefined") {
-            this.getCourse(this.$route.params.id).then((res) => {
+        if (typeof this.id !== "undefined") {
+            this.getCourse(this.id).then((res) => {
                 let course = res.data.data.course
                 this.data.name = course.name
-                this.data.description = course.description
+                this.data.description = course.description 
                 this.data.start_date = course.start_date
                 this.data.end_date = course.end_date
                 console.log(this.data)
@@ -74,3 +111,57 @@ export default {
     },
 }
 </script>
+
+<style scoped>
+.modal {
+    position: fixed;
+    z-index: 3;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    background-color: rgba(0, 0, 0, 0.4);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.row {
+    position: fixed;
+    z-index: 4;
+    top: 100px;
+    display: flex;
+    left: 40%;
+}
+
+.close {
+    color: #aaaaaa;
+    float: right;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover {
+    color: #000;
+    text-decoration: none;
+    cursor: pointer;
+    background-color: red;
+}
+
+.row {
+    width: 40%;
+}
+
+.card-body {
+    /* padding: 20px 50px; */
+    width: 100%;
+}
+
+.textarea {
+    height: 60px;
+}
+
+.form-create {
+    width: 100%;
+}</style>

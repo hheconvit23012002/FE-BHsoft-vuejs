@@ -14,7 +14,8 @@
                         </select>
                         <button class="btn btn-success" type="submit" @click.prevent="searchSubmit">Search</button>
                     </form>
-                    <router-link class="btn btn-primary" :to="{ name: 'admin-user-create' }">Create</router-link>
+                    <button class="btn btn-primary" @click="showCreate = true">Create</button>
+                    <!-- <router-link class="btn btn-primary" :to="{ name: 'admin-user-create' }">Create</router-link> -->
                     <table class="table table-striped table-centered mb-0" id="table-data">
                         <thead>
                             <tr>
@@ -51,10 +52,11 @@
                                     {{ value.number_courses }}
                                 </td>
                                 <td>
-                                    <router-link class="btn btn-success"
+                                    <button class="btn btn-success" @click="edit(value.id)">Edit</button>
+                                    <!-- <router-link class="btn btn-success"
                                         :to="{ name: 'admin-user-edit', params: { id: value.id } }">
                                         Edit
-                                    </router-link>
+                                    </router-link> -->
                                 </td>
                                 <td>
                                     <div class="btn btn-danger" @click="onDelete(value.id)">Delete</div>
@@ -62,42 +64,59 @@
                             </tr>
                         </tbody>
                     </table>
-                    <nav class="mt-4">
-                        <ul class="pagination pagination-rounded mb-0" id="paginate">
-                            <li @click.prevent="changePage(value.url)" v-for="(value, index) in users.pagination"
-                                :key="index" class="page-item" :class="{ active: value.active }">
-                                <a class="page-link" :href="value.url">
-                                    {{ value.label }}
-                                </a>
-                            </li>
-                        </ul>
-                    </nav>
+                    <a-pagination class="mt-4" :pageSize="15" @change="getUsers" v-model:current="currentPage"
+                        v-model:pageSizeOptions="pageSize" :total="totalCourses">
+                        <template #itemRender="{ type, originalElement }">
+                            <a class="page" v-if="type === 'prev'">Previous</a>
+                            <a class="page" v-else-if="type === 'next'">Next</a>
+                            <component :is="originalElement" v-else></component>
+                        </template>
+                    </a-pagination>
                 </div>
             </div>
         </div>
     </div>
+    <CreateUser v-if="showCreate" @close="closeCreatePopup"></CreateUser>
+    <EditUser v-if="showEdit" :id="id" @close="closeEditPopup"></EditUser>
 </template>
-<script>
+<script >
 import { mapActions, mapGetters } from 'vuex'
 import { notification } from 'ant-design-vue';
+import CreateUser from './CreateUser.vue';
+import EditUser from './EditUser.vue';
 export default {
     data() {
         return {
             q: this.$route.query.q || '',
             field: this.$route.query.field || 'name',
-            page: this.$route.query.page || 1
+            showCreate: false,
+            showEdit: false,
+            id: 0,
+            currentPage: 1,
+            totalCourses: 0,
+            pageSize: ['15']
         }
     },
     computed: {
         ...mapGetters(['users'])
     },
+    components: {
+        CreateUser,
+        EditUser
+    },
     methods: {
         ...mapActions(['getAllUsers', 'deleteUser']),
-        changePage(url) {
-            if (url !== null) {
-                this.page = url.split('page=')[1]
-                this.$router.push({ name: 'admin-users', query: { page: this.page, q: this.q, field: this.field } })
-            }
+        closeCreatePopup(){
+            this.showCreate = false;
+            this.currentPage = 1;
+        },
+        closeEditPopup(){
+            this.showEdit = false;
+            this.currentPage = 1;
+        },
+        edit(e) {
+            this.id = e
+            this.showEdit = true
         },
         searchSubmit() {
             this.getAllUsers({
@@ -105,8 +124,20 @@ export default {
                 field: this.field,
             })
         },
+        getUsers() {
+            this.getAllUsers({
+                q: this.q,
+                field: this.field,
+                page: this.currentPage,
+            }).then((res) => {
+                this.currentPage = res.current_page,
+                this.totalCourses = res.total
+                console.log(res)
+            })
+        },
         onDelete(e) {
             this.deleteUser(e).then(() => {
+                this.getUsers()
                 notification['success']({
                     message: 'Notification Access',
                     description: 'delete thanh cong',
@@ -120,20 +151,12 @@ export default {
         }
     },
     mounted() {
-        this.getAllUsers({
-            q: this.q,
-            field: this.field,
-            page: this.page,
-        })
+        this.getUsers()
     },
     watch: {
         page: function () {
-            this.getAllUsers({
-                q: this.q,
-                field: this.field,
-                page: this.page,
-            })
-        }
+            this.getUsers()
+        },
     }
 }
 </script>
@@ -141,5 +164,15 @@ export default {
 <style scoped>
 .img {
     width: 80px;
+}
+.page {
+    display: block;
+    background-color: white;
+    padding: 0 10px;
+}
+
+.page:hover {
+    background-color: rgb(54, 114, 232);
+    color: white;
 }
 </style>

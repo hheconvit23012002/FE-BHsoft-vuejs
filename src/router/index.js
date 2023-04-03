@@ -24,21 +24,21 @@ const routes = [
                 name: "admin-users",
                 component: () => import("../pages/admin/users/ListUsers.vue")
             },
-            {
-                path: "users/create",
-                name: "admin-user-create",
-                component: () => import("../pages/admin/users/CreateUser")
-            },
+            // {
+            //     path: "users/create",
+            //     name: "admin-user-create",
+            //     component: () => import("../pages/admin/users/CreateUser")
+            // },
             {
                 path: "users/show/:id",
                 name: "admin-user-show",
                 component: () => import("../pages/admin/users/ShowUser")
             },
-            {
-                path: "users/edit/:id",
-                name: "admin-user-edit",
-                component: () => import("../pages/admin/users/EditUser")
-            },
+            // {
+            //     path: "users/edit/:id",
+            //     name: "admin-user-edit",
+            //     component: () => import("../pages/admin/users/EditUser")
+            // },
             {
                 path: "courses",
                 name: "admin-courses",
@@ -49,16 +49,16 @@ const routes = [
                 name: "admin-course-show",
                 component: () => import("../pages/admin/courses/ShowCourse.vue")
             },
-            {
-                path: "courses/create",
-                name: "admin-course-create",
-                component: () => import("../pages/admin/courses/CreateCourse.vue")
-            },
-            {
-                path: "courses/edit/:id",
-                name: "admin-course-edit",
-                component: () => import("../pages/admin/courses/EditCourse.vue")
-            },
+            // {
+            //     path: "courses/create",
+            //     name: "admin-course-create",
+            //     component: () => import("../pages/admin/courses/CreateCourse.vue")
+            // },
+            // {
+            //     path: "courses/edit/:id",
+            //     name: "admin-course-edit",
+            //     component: () => import("../pages/admin/courses/EditCourse.vue")
+            // },
             {
                 path: "dashboard",
                 name: "admin-dashboard",

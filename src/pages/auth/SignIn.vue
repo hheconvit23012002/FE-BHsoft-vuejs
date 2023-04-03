@@ -55,6 +55,8 @@ export default {
                 }else{
                     localStorage.setItem("role",1)
                 }
+            }).catch(()=>{
+                alert("Sai tai khoan hoac mat khau")
             })
         }
     }

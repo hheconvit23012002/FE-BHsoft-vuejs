@@ -13,7 +13,7 @@ export default function ApiCaller(endpoint, mt = 'GET', body) {
             'Authorization' : "Bearer " + token 
         }
     }
-    if (config.method == 'GET' && body !== null) {
+    if (config.method == 'GET' && body !== null && body) {
         config.params = {
             q: body.q,
             page: body.page,
@@ -21,5 +21,4 @@ export default function ApiCaller(endpoint, mt = 'GET', body) {
         }
     }
     return axios(config)
-       
 }
