@@ -10,7 +10,7 @@ export default {
         commit('setAllCourseSelect2',res.data.data)
     },
     async createUser(state,data){
-        let courses = data.course.map((value)=>{
+        let courses = data.courses.map((value)=>{
             return parseInt(value.split(" id : ")[1])
         })
         const formData = new FormData();

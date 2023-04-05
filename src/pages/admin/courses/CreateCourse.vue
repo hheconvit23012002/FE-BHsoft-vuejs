@@ -10,24 +10,30 @@
                         @submit.prevent="onSubmitForm">
                         <div class="form-group">
                             <label for="name">Name</label>
-                            <input class="form-control" type="text" name="name" v-model="data.name">
+                            <input class="form-control" @blur="validate()" type="text" name="name" v-model="data.name"
+                                :class="{ 'is-invalid': error.name }">
+                            <div class="invalid-feedback d-block" v-if="error.name">{{ error.name }}</div>
                         </div>
                         <div class="form-group">
                             <label for="description">Description</label>
-                            <textarea class="form-control textarea" name="description" rows="12"
-                                v-model="data.description"></textarea>
+                            <textarea class="form-control textarea" name="description" rows="12" v-model="data.description"
+                                :class="{ 'is-invalid': error.description }" @blur="validate()"></textarea>
+                            <div class="invalid-feedback d-block" v-if="error.description">{{ error.description }}</div>
                         </div>
                         <div class="form-group">
                             <label for="start_date">Start date</label>
-                            <input class="form-control" type="date" name="start_date" v-model="data.start_date">
+                            <input class="form-control" type="date" name="start_date" v-model="data.start_date"
+                                @blur="validate()" :class="{ 'is-invalid': error.start_date }">
+                            <div class="invalid-feedback d-block" v-if="error.start_date">{{ error.start_date }}</div>
                         </div>
                         <div class="form-group">
                             <label for="end_date">End date</label>
-                            <input class="form-control" type="date" name="end_date" v-model="data.end_date">
+                            <input class="form-control" type="date" name="end_date" v-model="data.end_date"
+                                @blur="validate()" :class="{ 'is-invalid': error.end_date }">
+                            <div class="invalid-feedback d-block" v-if="error.end_date">{{ error.end_date }}</div>
                         </div>
                         <button class="btn btn-primary">submit</button>
                     </form>
-
                 </div>
             </div>
         </div>
@@ -47,37 +53,74 @@ export default {
                 start_date: '',
                 end_date: '',
             },
+            error: {
+                name: '',
+                description: '',
+                start_date: '',
+                end_date: '',
+            },
+            submited: false
         }
     },
     emits: ['close'],
     methods: {
         ...mapActions(['createCourse', 'getAllCourses']),
-        onSubmitForm() {
-            let flag = true;
-            let validate = [];
-            validate.push({ rg: Validate.isEmpty(this.data.name), title: "name" });
-            validate.push({ rg: Validate.lengthMax(this.data.description), title: "description" });
-            validate.push({ rg: Validate.isEmpty(this.data.start_date), title: "start_date" });
-            validate.push({ rg: Validate.isEmpty(this.data.end_date), title: "end_date" });
-            validate.push({ rg: Validate.isDate(this.data.start_date), title: "start_date" });
-            validate.push({ rg: Validate.isDate(this.data.end_date), title: "end_date" });
-            validate.push({ rg: Validate.checkDateCourse(this.data.start_date, this.data.end_date), title: "Date" });
-            for (let i = 0; i < validate.length; i++) {
-                if (validate[i].rg.status === false) {
-                    flag = false;
-                    Swal.fire({
-                        icon: 'error',
-                        title: validate[i].title,
-                        text: validate[i].rg.text,
-                    })
-                    break;
+        validate() {
+            let flag = true
+            if (this.submited) {
+                this.error = {
+                    name: '',
+                    description: '',
+                    start_date: '',
+                    end_date: '',
+                }
+                let flagDate = true
+                if (Validate.isEmpty(this.data.name).status === false) {
+                    flag = false
+                    this.error.name = Validate.isEmpty(this.data.name).text
+                }
+                if (Validate.lengthMax(this.data.description).status === false) {
+                    flag = false
+                    this.error.description = Validate.lengthMax(this.data.description).text
+                }
+                if (Validate.isEmpty(this.data.start_date).status === false) {
+                    flag = false
+                    flagDate = false
+                    this.error.start_date = Validate.isEmpty(this.data.start_date).text
+                } else if (Validate.isDate(this.data.start_date).status === false) {
+                    flag = false
+                    flagDate = false
+                    this.error.start_date = Validate.isDate(this.data.start_date).text
+                }
+                if (Validate.isEmpty(this.data.end_date).status === false) {
+                    flag = false
+                    flagDate = false
+                    this.error.end_date = Validate.isEmpty(this.data.end_date).text
+                } else if (Validate.isDate(this.data.end_date).status === false) {
+                    flag = false
+                    flagDate = false
+                    this.error.end_date = Validate.isDate(this.data.end_date).text
+                }
+                if (flagDate) {
+                    if (Validate.checkDateCourse(this.data.start_date, this.data.end_date).status === false) {
+                        flag = false
+                        console.log("ok")
+                        this.error.start_date = Validate.checkDateCourse(this.data.start_date, this.data.end_date).text
+                        this.error.end_date = Validate.checkDateCourse(this.data.start_date, this.data.end_date).text
+                    }
                 }
             }
+
+            return flag;
+        },
+        onSubmitForm() {
+            this.submited = true
+            let flag = this.validate()
             if (flag) {
                 this.createCourse(this.data).then(() => {
                     Swal.fire({
                         icon: 'success',
-                        title : 'Success',
+                        title: 'Success',
                         text: 'Thanh Cong',
                     })
                     this.getAllCourses()
@@ -146,5 +189,4 @@ export default {
 
 .form-create {
     width: 100%;
-}
-</style>
+}</style>

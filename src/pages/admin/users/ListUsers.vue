@@ -36,7 +36,7 @@
                                     </router-link>
                                 </td>
                                 <td>
-                                    <img :src="value.logo" alt="" class="img">
+                                    <img :src="'http://laravel_bhsoft_v1.test/storage/'+value.logo" alt="" class="img">
                                 </td>
                                 <td>
                                     <span>{{ value.name }}</span>

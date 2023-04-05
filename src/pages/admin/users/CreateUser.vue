@@ -9,28 +9,54 @@
                     <form class="form-horizontal form-create" id="form-user" method="post" enctype="multipart/form-data"
                         @submit.prevent="onSubmitForm">
                         <div class="form-group">
-                            <label for="name">Name</label>
-                            <input class="form-control" type="text" name="name" v-model="data.name">
+                            <div class="d-inline-flex">
+                                <label for="name">Name </label>
+                                <div class="invalid-feedback d-block ml-1" v-if="error.name">{{ error.name }}</div>
+                            </div>
+                            <input class="form-control" @blur="validate()" type="text" name="name" v-model="data.name"
+                                :class="{ 'is-invalid': error.name }">
                         </div>
                         <div class="form-group">
-                            <label for="email">Email</label>
-                            <input class="form-control" type="email" name="email" v-model="data.email">
+                            <div class="d-inline-flex">
+                                <label for="email">Email</label>
+                                <div class="invalid-feedback d-block ml-1" v-if="error.email">{{ error.email }}</div>
+                            </div>
+                            <input class="form-control" @blur="validate()" type="email" name="email" v-model="data.email"
+                                :class="{ 'is-invalid': error.email }">
                         </div>
                         <div class="form-group">
-                            <label for="birthday">Birthday</label>
-                            <input class="form-control" type="date" name="birthdate" v-model="data.birthdate">
+                            <div class="d-inline-flex">
+                                <label for="birthday">Birthday</label>
+                                <div class="invalid-feedback d-block ml-1" v-if="error.birthdate">{{ error.birthdate }}
+                                </div>
+                            </div>
+                            <input class="form-control" @blur="validate()" type="date" name="birthdate"
+                                v-model="data.birthdate" :class="{ 'is-invalid': error.birthdate }">
                         </div>
                         <div class="form-group">
-                            <label for="phone_number">Phone Number</label>
-                            <input class="form-control" type="text" name="phone_number" v-model="data.phone_number">
+                            <div class="d-inline-flex">
+                                <label for="phone_number">Phone Number</label>
+                                <div class="invalid-feedback d-block ml-1" v-if="error.phone_number">{{ error.phone_number
+                                }}</div>
+                            </div>
+                            <input class="form-control" @blur="validate()" type="text" name="phone_number"
+                                v-model="data.phone_number" :class="{ 'is-invalid': error.phone_number }">
                         </div>
                         <div class="form-group">
-                            <label for="logo">Avatar</label>
-                            <input class="form-control" id="input-logo" type="file" name="logo" @change="onFileChange">
+                            <div class="d-inline-flex">
+                                <label for="logo">Avatar</label>
+                                <div class="invalid-feedback d-block ml-1" v-if="error.logo">{{ error.logo }}</div>
+                            </div>
+                            <input class="form-control" @blur="validate()" id="input-logo" type="file" name="logo"
+                                @change="onFileChange" :class="{ 'is-invalid': error.logo }">
+                            <img v-if="imageUrl" class="mt-2 " style="width: 200px; border-radius: 50%;" :src="imageUrl" alt="Uploaded image">
                         </div>
                         <div class="form-group">
-                            <label>Course</label>
-                            <a-select v-model:value="data.course" mode="multiple" style="width: 100%"
+                            <div class="d-inline-flex">
+                                <label>Course</label>
+                                <div class="invalid-feedback d-block ml-1" v-if="error.course">{{ error.course }}</div>
+                            </div>
+                            <a-select v-model:value="data.courses" mode="multiple" @blur="validate()" style="width: 100%"
                                 placeholder="Please select" :options="this.courseSelect2.map((res) => {
                                     return { value: '' + res.name + ' id : ' + res.id }
                                 })" @change="handleChange"></a-select>
@@ -55,8 +81,18 @@ export default {
                 birthdate: '',
                 phone_number: '',
                 logo: null,
-                course: [],
-            }
+                courses: [],
+            },
+            error: {
+                name: '',
+                email: '',
+                birthdate: '',
+                phone_number: '',
+                logo: '',
+                course: '',
+            },
+            submited: false,
+            imageUrl: null
         }
     },
     computed: {
@@ -64,36 +100,67 @@ export default {
     },
     emits: ['close'],
     methods: {
-        ...mapActions(['getCourseSelect2', 'createUser','getAllUsers']),
-        onSubmitForm() {
-            let flag = true;
-            let validate = [];
-            validate.push({ rg: Validate.isEmpty(this.data.name), title: "name" });
-            validate.push({ rg: Validate.isEmpty(this.data.email), title: "email" });
-            validate.push({ rg: Validate.isEmail(this.data.email), title: "email" });
-            validate.push({ rg: Validate.isEmpty(this.data.birthdate), title: "birth_date" });
-            validate.push({ rg: Validate.isDate(this.data.birthdate), title: "birth_date" });
-            validate.push({ rg: Validate.isBirthDate(this.data.birthdate), title: "birth_date" });
-            validate.push({ rg: Validate.isEmpty(this.data.phone_number), title: "phone_number" });
-            validate.push({ rg: Validate.isPhoneNumber(this.data.phone_number), title: "phone_number" });
-            validate.push({ rg: Validate.isEmpty(this.data.logo), title: "logo" });
-            validate.push({ rg: Validate.isEmpty(this.data.course), title: "course" });
-            for (let i = 0; i < validate.length; i++) {
-                if (validate[i].rg.status === false) {
-                    flag = false;
-                    Swal.fire({
-                        icon: 'error',
-                        title: validate[i].title,
-                        text: validate[i].rg.text,
-                    })
-                    break;
+        ...mapActions(['getCourseSelect2', 'createUser', 'getAllUsers']),
+        validate() {
+            let flag = true
+            if (this.submited) {
+                this.error = {
+                    name: '',
+                    email: '',
+                    birthdate: '',
+                    phone_number: '',
+                    logo: '',
+                    course: '',
+                }
+                if (Validate.isEmpty(this.data.name).status === false) {
+                    flag = false
+                    this.error.name = Validate.isEmpty(this.data.name).text
+                }
+                if (Validate.isEmpty(this.data.email).status === false) {
+                    flag = false
+                    this.error.email = Validate.isEmpty(this.data.email).text
+                } else if (Validate.isEmail(this.data.email).status === false) {
+                    flag = false
+                    this.error.email = Validate.isEmpty(this.data.email).text
+                }
+                if (Validate.isEmpty(this.data.birthdate).status === false) {
+                    flag = false
+                    this.error.birthdate = Validate.isEmpty(this.data.birthdate).text
+                } else if (Validate.isDate(this.data.birthdate).status === false) {
+                    flag = false
+                    this.error.email = Validate.isDate(this.data.birthdate).text
+                } else if (Validate.isBirthDate(this.data.birthdate).status === false) {
+                    flag = false
+                    this.error.birthdate = Validate.isBirthDate(this.data.birthdate).text
+                }
+                if (Validate.isEmpty(this.data.phone_number).status === false) {
+                    flag = false
+                    this.error.phone_number = Validate.isEmpty(this.data.phone_number).text
+                } else if (Validate.isPhoneNumber(this.data.phone_number).status === false) {
+                    flag = false
+                    this.error.phone_number = Validate.isPhoneNumber(this.data.phone_number).text
+                }
+
+                if (Validate.isEmpty(this.data.logo).status === false) {
+                    flag = false
+                    this.error.logo = Validate.isEmpty(this.data.logo).text
+                }
+                if (Validate.isEmpty(this.data.courses).status === false) {
+                    flag = false
+                    this.error.course = Validate.isEmpty(this.data.courses).text
                 }
             }
+
+            return flag;
+        },
+        onSubmitForm() {
+            this.submited = true
+            let flag = this.validate();
             if (flag) {
                 this.createUser(this.data).then(() => {
                     Swal.fire({
                         icon: 'success',
-                        title : 'Success',
+                        title: 'Success',
                         text: 'Thanh Cong',
                     })
                     this.getAllUsers()
@@ -102,7 +169,7 @@ export default {
                     Swal.fire({
                         icon: 'error',
                         title: 'Error',
-                        text: err.response.data,
+                        text: err.response.data.message,
                     })
                 })
             }
@@ -110,9 +177,10 @@ export default {
         },
         onFileChange(event) {
             this.data.logo = event.target.files[0]
+            this.imageUrl = URL.createObjectURL(this.data.logo)
         },
         handleChange() {
-            console.log(this.data.course);
+            console.log(this.data.courses);
         },
     },
     mounted() {
@@ -140,6 +208,8 @@ export default {
     top: 100px;
     display: flex;
     left: 40%;
+    overflow: auto;
+    height: 574px;
 }
 
 .close {
@@ -148,6 +218,15 @@ export default {
     font-size: 24px;
     font-weight: bold;
     cursor: pointer;
+}
+
+
+.card {
+    margin-bottom: 0;
+}
+
+.col-12 {
+    padding: 0;
 }
 
 .close:hover {
@@ -168,5 +247,10 @@ export default {
 
 .form-create {
     width: 100%;
+}
+
+.invalid-feedback {
+    position: relative;
+    top: -2px;
 }
 </style>
